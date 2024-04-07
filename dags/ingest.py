@@ -22,7 +22,7 @@ def upload_to_minio():
     minio_conn_id = 'minio_connection'
 
     # Specify the local file path
-    local_csv_path = 'C:\Users\RachidBOUBAYA\Airflow-Tuto\image'
+    local_csv_path = 'C:\\Users\\RachidBOUBAYA\\Airflow-Tuto\\image'
 
     # Specify the Minio bucket name and object key
     bucket_name = 'cnam'
