@@ -1,20 +1,34 @@
-import datetime
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+from datetime import datetime
 
-from airflow import models
-
-default_dag_args = {
-    # The start_date describes when a DAG is valid / can be run. Set this to a
-    # fixed point in time rather than dynamically, since it is evaluated every
-    # time a DAG is parsed. See:
-    # https://airflow.apache.org/faq.html#what-s-the-deal-with-start-date
-    "start_date": datetime.datetime(2024, 4, 7),
+#Define default arguments
+default_args = {
+ 'owner': 'your_name',
+ 'start_date': datetime (2023, 9, 29),
+ 'retries': 1,
 }
 
-# Define a DAG (directed acyclic graph) of tasks.
-# Any task you create within the context manager is automatically added to the
-# DAG object.
-with models.DAG(
-    "composer_sample_simple_greeting",
-    schedule_interval=datetime.timedelta(days=1),
-    default_args=default_dag_args,
-) as dag:
+# Instantiate your DAG
+dag = DAG ('my_first_dag', default_args=default_args, schedule_interval=None)
+
+# Define tasks
+def task1():
+ print ("Executing Task 1")
+
+def task2():
+ print ("Executing Task 2")
+
+task_1 = PythonOperator(
+ task_id='task_1',
+ python_callable=task1,
+ dag=dag,
+)
+task_2 = PythonOperator(
+ task_id='task_2',
+ python_callable=task2,
+ dag=dag,
+)
+
+# Set task dependencies
+task_1 >> task_2
