@@ -13,8 +13,8 @@ def create_hello_world_file():
 def upload_to_minio(ti):
     file_path = ti.xcom_pull(task_ids='create_file_task')
     minio_client = Minio("http://127.0.0.1:9090",
-                         access_key="rHAybAvY4TTGJgyhBmZN",
-                         secret_key="2toLoIUuBP22e4XybLownnqH06sj0SunsQTDv9Q8",
+                         access_key="ulP5cLiIvsabH8U9Ur6e",
+                         secret_key="ZgoE9eCjkrm62d6FjdgbWtcK7NSEo2ErHqchFPr9",
                          secure=False)
     minio_client.fput_object("cnam", "hello_world.txt", file_path)
 
