@@ -1,28 +1,26 @@
-from datetime import datetime, timedelta
-
 from airflow import DAG
-from airflow.providers.amazon.aws.sensors.s3_key import S3KeySensor
-
+from airflow.utils.dates import days_ago
+# Use the generic S3 sensor if available in your Airflow version
+from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
 
 default_args = {
-    'owner': 'rachid',
-    'retries': 5,
-    'retry_delay': timedelta(minutes=10)
+    'owner': 'airflow',
+    'start_date': days_ago(1),
 }
 
-
-with DAG(
-    dag_id='dag_with_minio_s3_v02',
-    start_date=datetime(2024, 4, 8),
+dag = DAG(
+    dag_id='example_s3_sensor',
+    default_args=default_args,
     schedule_interval='@daily',
-    default_args=default_args
-) as dag:
-    task1 = S3KeySensor(
-        task_id='sensor_minio_s3',
-        bucket_name='cnam',
-        bucket_key='UsersAD.xlsx',
-        aws_conn_id='minio_conn',
-        mode='poke',
-        poke_interval=5,
-        timeout=30
-    )
+    tags=['example'],
+)
+
+# Example usage of the S3KeySensor
+task = S3KeySensor(
+    task_id='check_s3_for_key',
+    bucket_key='s3://cnam/UsersAD.xlsx',
+    aws_conn_id='minio_conn',
+    timeout=18*60*60,
+    poke_interval=120,
+    dag=dag,
+)
