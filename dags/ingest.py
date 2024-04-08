@@ -20,7 +20,7 @@ with DAG(
     },
     description='A simple DAG to test Minio connectivity',
     schedule_interval=None,
-    start_date=datetime(2023, 1, 1),
+    start_date=datetime(2024, 4, 8),
     catchup=False,
 ) as dag:
 
