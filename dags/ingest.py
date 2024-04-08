@@ -12,7 +12,7 @@ def create_hello_world_file():
 
 def upload_to_minio(ti):
     file_path = ti.xcom_pull(task_ids='create_file_task')
-    minio_client = Minio("http://127.0.0.1:9090",
+    minio_client = Minio("http://minio:9090",
                          access_key="ulP5cLiIvsabH8U9Ur6e",
                          secret_key="ZgoE9eCjkrm62d6FjdgbWtcK7NSEo2ErHqchFPr9",
                          secure=False)
