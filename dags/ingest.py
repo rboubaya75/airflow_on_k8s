@@ -1,34 +1,36 @@
 from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from datetime import datetime
+import os
+from minio import Minio
 
-#Define default arguments
-default_args = {
- 'owner': 'your_name',
- 'start_date': datetime (2023, 9, 29),
- 'retries': 1,
-}
+def create_hello_world_file():
+    file_path = "/tmp/hello_world.txt"
+    with open(file_path, "w") as f:
+        f.write("Hello, World!")
+    return file_path
 
-# Instantiate your DAG
-dag = DAG ('my_first_dag', default_args=default_args, schedule_interval=None)
+def upload_to_minio(ti):
+    file_path = ti.xcom_pull(task_ids='create_file_task')
+    minio_client = Minio("http://127.0.0.1:9090",
+                         access_key="rHAybAvY4TTGJgyhBmZN",
+                         secret_key="2toLoIUuBP22e4XybLownnqH06sj0SunsQTDv9Q8",
+                         secure=False)
+    minio_client.fput_object("cnam", "hello_world.txt", file_path)
 
-# Define tasks
-def task1():
- print ("Executing Task 1")
+with DAG("hello_world_to_minio",
+         start_date=datetime(2023, 1, 1),
+         schedule_interval="@daily",
+         catchup=False) as dag:
 
-def task2():
- print ("Executing Task 2")
+    create_file_task = PythonOperator(
+        task_id="create_file_task",
+        python_callable=create_hello_world_file,
+    )
 
-task_1 = PythonOperator(
- task_id='task_1',
- python_callable=task1,
- dag=dag,
-)
-task_2 = PythonOperator(
- task_id='task_2',
- python_callable=task2,
- dag=dag,
-)
+    upload_file_task = PythonOperator(
+        task_id="upload_file_task",
+        python_callable=upload_to_minio,
+    )
 
-# Set task dependencies
-task_1 >> task_2
+    create_file_task >> upload_file_task
