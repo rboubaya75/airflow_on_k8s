@@ -4,7 +4,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
 def test_minio_connection(bucket_name: str, **kwargs):
-    hook = S3Hook(aws_conn_id='your_minio_conn')
+    hook = S3Hook(aws_conn_id='minio_conn')
     keys = hook.list_keys(bucket_name)
     if keys is None:
         print(f"No keys found or bucket '{bucket_name}' does not exist.")
