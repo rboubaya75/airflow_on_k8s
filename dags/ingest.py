@@ -31,5 +31,5 @@ with DAG(
     test_minio = PythonOperator(
         task_id='test_minio_connection',
         python_callable=test_minio_connection,
-        op_kwargs={'bucket_name': 'your_specific_bucket_name'},  # Replace with your bucket name
+        op_kwargs={'bucket_name': 'cnam'},  # Replace with your bucket name
     )
