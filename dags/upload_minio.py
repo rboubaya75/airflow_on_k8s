@@ -8,7 +8,7 @@ def upload_to_minio():
         client = Minio("https://minio.cnam.svc.cluster.local:443",
                        access_key="Rd6YQYQOzOB2f0T2",
                        secret_key="yyEKqqUdMAVURAoEk7jKqxKEd42RoOq6",
-                       secure=True)
+                       secure=False)
 
         bucket_name = "cnam2"
 
