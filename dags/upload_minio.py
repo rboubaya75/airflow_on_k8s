@@ -5,7 +5,7 @@ from minio import Minio
 from minio.error import S3Error
 
 def upload_to_minio():
-    client = Minio("https://20.19.131.179:9443/",
+    client = Minio("https://20.19.131.164:443",
                    access_key="Rd6YQYQOzOB2f0T2",
                    secret_key="yyEKqqUdMAVURAoEk7jKqxKEd42RoOq6",
                    secure=False)
