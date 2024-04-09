@@ -2,6 +2,10 @@ from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from datetime import datetime
 
+import logging
+
+# Au début de votre fonction
+logging.basicConfig(level=logging.INFO)
 
 def upload_to_minio():
     try:
