@@ -1,53 +1,49 @@
+from datetime import datetime
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from datetime import datetime, timedelta
-import logging
+import boto3
+from botocore.client import Config
 
-# Il est préférable de configurer les logs au niveau global, pas à l'intérieur d'une fonction
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+def create_minio_bucket():
+    s3_client = boto3.client(
+        service_name='s3',
+        endpoint_url='https://20.19.131.164:443',
+        aws_access_key_id="Rd6YQYQOzOB2f0T2",
+        aws_secret_access_key='yyEKqqUdMAVURAoEk7jKqxKEd42RoOq6',
+        config=Config(signature_version='s3v4'),
+        verify=False  # This disables SSL certificate verification
+    )
 
-def upload_to_minio():
-    from minio import Minio
-    from minio.error import S3Error
+    bucket_name = 'my-test-bucket'
+    s3_client.create_bucket(Bucket=bucket_name)
+    print(f"Bucket '{bucket_name}' created")
 
-    try:
-        client = Minio(endpoint_url="https://20.19.131.164:443",
-                       access_key="Rd6YQYQOzOB2f0T2",
-                       secret_key="yyEKqqUdMAVURAoEk7jKqxKEd42RoOq6",
-                       secure=False)
+def upload_file_to_bucket():
+    s3_client = boto3.client(
+        service_name='s3',
+        endpoint_url='https://20.19.131.164:443',
+        aws_access_key_id="Rd6YQYQOzOB2f0T2",
+        aws_secret_access_key='yyEKqqUdMAVURAoEk7jKqxKEd42RoOq6',
+        config=Config(signature_version='s3v4'),
+        verify=False
+    )
+    
+    bucket_name = 'my-test-bucket'
+    file_name = 'example.csv'
+    s3_client.upload_file(file_name, bucket_name, file_name)
+    print(f"'{file_name}' uploaded to bucket '{bucket_name}'")
 
-        bucket_name = "cnam2"
+with DAG('minio_bucket_and_upload', start_date=datetime(2021, 1, 1),
+         schedule_interval='@once', catchup=False) as dag:
+    
+    create_bucket_task = PythonOperator(
+        task_id='create_minio_bucket',
+        python_callable=create_minio_bucket,
+    )
 
-        # Utilisation de logger au lieu de print pour une intégration plus cohérente avec les logs d'Airflow
-        if not client.bucket_exists(bucket_name):
-            client.make_bucket(bucket_name)
-            logger.info(f"Bucket {bucket_name} created successfully.")
-        else:
-            logger.info(f"Bucket {bucket_name} already exists.")
-    except S3Error as e:
-        logger.error(f"Encountered an error with MinIO S3: {e}")
-    except Exception as e:
-        logger.error(f"Encountered a general exception: {e}")
+    upload_file_task = PythonOperator(
+        task_id='upload_file_to_bucket',
+        python_callable=upload_file_to_bucket,
+    )
 
-# Il est recommandé d'ajouter un peu de délai au start_date pour éviter les confusions de timezone avec Airflow
-default_args = {
-    'owner': 'airflow',
-    'depends_on_past': False,
-    'email': ['your_email@example.com'],
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5),
-}
-
-dag = DAG('upload_file_to_minio',
-          default_args=default_args,
-          description='Upload file to MinIO',
-          schedule_interval='0 12 * * *',
-          start_date=datetime(2024, 9, 4) - timedelta(days=1),
-          catchup=False)
-
-upload_task = PythonOperator(task_id='upload_to_minio',
-                             python_callable=upload_to_minio,
-                             dag=dag)
+create_bucket_task >> upload_file_task
