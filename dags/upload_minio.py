@@ -12,7 +12,7 @@ def upload_to_minio():
     from minio.error import S3Error
 
     try:
-        client = Minio("minio.cnam.svc.cluster.local:443",
+        client = Minio("http://127.0.0.1:9090/",
                        access_key="Rd6YQYQOzOB2f0T2",
                        secret_key="yyEKqqUdMAVURAoEk7jKqxKEd42RoOq6",
                        secure=False)
