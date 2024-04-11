@@ -23,7 +23,7 @@ def connect_to_minio():
     )
     return client
 
-bucket_name = "cnam3"
+
 def create_bucket_if_not_exists(client, bucket_name):
     # Vérification et création du seau si nécessaire
     exists = client.bucket_exists(bucket_name)
@@ -38,14 +38,12 @@ with DAG('minio_bucket', start_date=datetime(2024, 4, 11),
 
     connect_to_minio_task = PythonOperator(
         task_id='connect_to_minio',
-        python_callable=connect_to_minio,
+        python_callable=connect_to_minio(),
     )
     
     create_bucket_task = PythonOperator(
         task_id='create_minio_bucket',
-        python_callable=create_bucket_if_not_exists,
-        op_kwargs={'client': "{{ ti.xcom_pull(task_ids='connect_to_minio') }}", 'bucket_name': bucket_name},
-        # Passage des arguments nécessaires à la fonction
-    )
+        python_callable=create_bucket_if_not_exists(),
+      )
 
 connect_to_minio_task >> create_bucket_task  
