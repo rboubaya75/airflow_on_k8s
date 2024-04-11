@@ -9,7 +9,7 @@ def setup_minio_and_create_bucket(bucket_name):
     urllib3.disable_warnings()
     http_client = urllib3.PoolManager(cert_reqs='CERT_NONE', assert_hostname=False)
     client = Minio(
-        "https://minio.cnam.svc.cluster.local:443",
+        endpoint="https://minio.cnam.svc.cluster.local:443",
         access_key="Rd6YQYQOzOB2f0T2",
         secret_key="yyEKqqUdMAVURAoEk7jKqxKEd42RoOq6",
         secure=True,
