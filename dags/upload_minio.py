@@ -37,7 +37,7 @@ def create_bucket_if_not_exists(client, bucket_name):
 with DAG('minio_bucket', start_date=datetime(2024, 4, 11),
          schedule='@once', catchup=False) as dag:  # Updated here
 
-    connect_to_minio = PythonOperator(
+    connect_to_minio_task = PythonOperator(
         task_id='connect_to_minio',
         python_callable=connect_to_minio,
     )
@@ -46,5 +46,4 @@ with DAG('minio_bucket', start_date=datetime(2024, 4, 11),
         task_id='create_minio_bucket',
         python_callable=create_bucket_if_not_exists,
     )
-
-connect_to_minio > create_bucket_if_not_exists
+connect_to_minio_task >> create_bucket_task 
