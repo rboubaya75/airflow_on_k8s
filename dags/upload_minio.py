@@ -46,4 +46,5 @@ with DAG('minio_bucket', start_date=datetime(2024, 4, 11),
         task_id='create_minio_bucket',
         python_callable=create_bucket_if_not_exists,
     )
+)
 connect_to_minio_task >> create_bucket_task 
