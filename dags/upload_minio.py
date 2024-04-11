@@ -43,10 +43,4 @@ with DAG('minio_bucket_and_upload', start_date=datetime(2021, 1, 1),
         task_id='create_minio_bucket',
         python_callable=create_bucket_if_not_exists,
     )
-
-    upload_file_task = PythonOperator(
-        task_id='upload_file_to_bucket',
-        python_callable=upload_file_to_bucket,
-    )
-
 create_bucket_task 
