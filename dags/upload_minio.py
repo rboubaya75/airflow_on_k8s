@@ -25,7 +25,7 @@ def connect_to_minio():
 
 def create_bucket_if_not_exists(**kwargs):
     client = kwargs['ti'].xcom_pull(task_ids='connect_to_minio_task')
-    bucket_name = "cnam3"
+
     # Vérification et création du seau si nécessaire
     exists = client.bucket_exists(bucket_name)
     if not exists:
@@ -45,7 +45,7 @@ with DAG('minio_bucket', start_date=datetime(2024, 4, 11),
     create_bucket_task = PythonOperator(
         task_id='create_minio_bucket',
         python_callable=create_bucket_if_not_exists,
-        provide_context=True,  # Permet d'accéder à `kwargs` dans la fonction
+        op_kwargs={'bucket_name': 'cnam4'},
     )
 
 connect_to_minio_task >> create_bucket_task
