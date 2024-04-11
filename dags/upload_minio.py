@@ -9,7 +9,7 @@ def setup_minio_and_create_bucket(bucket_name):
     urllib3.disable_warnings()
     #http_client = urllib3.PoolManager(cert_reqs='CERT_NONE', assert_hostname=False)
     client = Minio(
-         "10.224.2.34:9000"
+         "10.224.2.34:9000",
         access_key="Rd6YQYQOzOB2f0T2",
         secret_key="yyEKqqUdMAVURAoEk7jKqxKEd42RoOq6",
         secure=false,
