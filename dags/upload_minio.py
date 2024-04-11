@@ -4,7 +4,7 @@ from airflow.operators.python import PythonOperator
 import boto3
 from botocore.client import Config
 
-bucket_name = 'my-test-bucket2'
+bucket_name = 'my-test-bucket3'
 
 def create_minio_bucket():
     s3_client = boto3.client(
