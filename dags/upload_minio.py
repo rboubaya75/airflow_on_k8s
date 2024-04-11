@@ -25,17 +25,16 @@ def connect_to_minio():
 
 bucket_name = "cnam3"
 def create_bucket_if_not_exists(client, bucket_name):
-    # Check if the bucket exists, and create it if not
+    # Vérification et création du seau si nécessaire
     exists = client.bucket_exists(bucket_name)
     if not exists:
         client.make_bucket(bucket_name)
         print(f"Bucket '{bucket_name}' created.")
     else:
-        print(f"Bucket '{bucket_name}' already exist")
-
+        print(f"Bucket '{bucket_name}' already exists.")
 
 with DAG('minio_bucket', start_date=datetime(2024, 4, 11),
-         schedule='@once', catchup=False) as dag:  # Updated here
+         schedule_interval='@once', catchup=False) as dag:  # Correction de 'schedule' à 'schedule_interval'
 
     connect_to_minio_task = PythonOperator(
         task_id='connect_to_minio',
@@ -45,6 +44,8 @@ with DAG('minio_bucket', start_date=datetime(2024, 4, 11),
     create_bucket_task = PythonOperator(
         task_id='create_minio_bucket',
         python_callable=create_bucket_if_not_exists,
+        op_kwargs={'client': "{{ ti.xcom_pull(task_ids='connect_to_minio') }}", 'bucket_name': bucket_name},
+        # Passage des arguments nécessaires à la fonction
     )
-)
-connect_to_minio_task >> create_bucket_task 
+
+connect_to_minio_task >> create_bucket_task  
