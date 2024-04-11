@@ -3,7 +3,8 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 import boto3
 from botocore.client import Config
-
+import urllib3
+import os
 # Disable SSL certificate verification warning
 urllib3.disable_warnings()
 
