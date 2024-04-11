@@ -1,9 +1,9 @@
 from datetime import datetime
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-import urllib3
-import os
 from minio import Minio
+import urllib3
+
 # Disable SSL certificate verification warning
 urllib3.disable_warnings()
 
@@ -13,7 +13,6 @@ def connect_to_minio():
         cert_reqs='CERT_NONE',
         assert_hostname=False,
     )
-    
     # Initialize the Minio client
     client = Minio(
         "20.19.131.164:443",
@@ -24,8 +23,9 @@ def connect_to_minio():
     )
     return client
 
-
-def create_bucket_if_not_exists(client, bucket_name):
+def create_bucket_if_not_exists(**kwargs):
+    client = kwargs['ti'].xcom_pull(task_ids='connect_to_minio_task')
+    bucket_name = "cnam3"
     # Vérification et création du seau si nécessaire
     exists = client.bucket_exists(bucket_name)
     if not exists:
@@ -35,16 +35,17 @@ def create_bucket_if_not_exists(client, bucket_name):
         print(f"Bucket '{bucket_name}' already exists.")
 
 with DAG('minio_bucket', start_date=datetime(2024, 4, 11),
-         schedule_interval='@once', catchup=False) as dag:  # Correction de 'schedule' à 'schedule_interval'
+         schedule_interval='@once', catchup=False) as dag:
 
     connect_to_minio_task = PythonOperator(
         task_id='connect_to_minio',
-        python_callable=connect_to_minio(),
+        python_callable=connect_to_minio,
     )
     
     create_bucket_task = PythonOperator(
         task_id='create_minio_bucket',
-        python_callable=create_bucket_if_not_exists(),
-      )
+        python_callable=create_bucket_if_not_exists,
+        provide_context=True,  # Permet d'accéder à `kwargs` dans la fonction
+    )
 
-connect_to_minio_task >> create_bucket_task  
+connect_to_minio_task >> create_bucket_task
