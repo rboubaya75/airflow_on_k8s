@@ -3,6 +3,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 import urllib3
 import os
+from minio import Minio
 # Disable SSL certificate verification warning
 urllib3.disable_warnings()
 
