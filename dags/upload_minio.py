@@ -7,13 +7,13 @@ import urllib3
 def setup_minio_and_create_bucket(bucket_name):
     # Configuration du client Minio (avec vérification SSL désactivée pour le test)
     urllib3.disable_warnings()
-    #http_client = urllib3.PoolManager(cert_reqs='CERT_NONE', assert_hostname=False)
+    http_client = urllib3.PoolManager(cert_reqs='CERT_NONE', assert_hostname=False)
     client = Minio(
          "20.19.131.164",
         access_key="Rd6YQYQOzOB2f0T2",
         secret_key="yyEKqqUdMAVURAoEk7jKqxKEd42RoOq6",
-        secure=false,
-       # http_client=http_client
+        secure=True,
+        http_client=http_client
     )
     
     # Vérification et création du seau si nécessaire
