@@ -1,0 +1,38 @@
+superset fab create-admin \
+    --username admin \
+    --firstname admin \
+    --lastname admin \
+    --email r.boubaya@gmail.com\
+    --password admin
+
+
+SURSET: 
+
+trino://admin@trino.trino.svc.cluster.local:8081/hive
+trino://admin@trino.trino.svc.cluster.local:8081/iceberg
+
+Airflow: 
+trino connection
+
+
+host: trino.trino.svc.cluster.local
+port: 8081
+login admin
+
+extra:
+
+{
+  "protocol": "http",
+  "verifiy": "false",
+  "auth": "None"
+}
+
+
+
+CREATE DATABASE gitlab_production;
+CREATE USER gitlab WITH PASSWORD 'gitlab';
+GRANT ALL PRIVILEGES ON DATABASE gitlab_production TO gitlab;
+
+
+
+kubectl create secret generic minio-credentials --from-literal=accesskey=hT4UOsjlyOYv89WC --from-literal=secretkey=mTVqIWuUglV65LMIuMhUbl50tK9aORFI -n gitlab

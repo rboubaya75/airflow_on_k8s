@@ -1,0 +1,121 @@
+# Persistent Volume Claim for PostgreSQL
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nessie-postgres-pv
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-storage
+  nfs:
+    server: 10.0.3.5
+    path: /mnt/nfs_share/nessie-postgres
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nessie-postgres-pvc
+  namespace: nessie
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: nfs-storage
+  volumeName: nessie-postgres-pv
+---
+# PostgreSQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:13
+        env:
+        - name: POSTGRES_USER
+          value: nessie
+        - name: POSTGRES_PASSWORD
+          value: nessie
+        - name: POSTGRES_DB
+          value: nessiedb
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgres-storage
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: nessie-postgres-pvc
+---
+# PostgreSQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres
+  
+
+---
+# Nessie Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nessie
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nessie
+  template:
+    metadata:
+      labels:
+        app: nessie
+    spec:
+      containers:
+      - name: nessie
+        image: projectnessie/nessie:latest
+        ports:
+        - containerPort: 19120
+        env:
+        - name: QUARKUS_DATASOURCE_JDBC_URL
+          value: jdbc:postgresql://postgres:5432/nessiedb
+        - name: QUARKUS_DATASOURCE_USERNAME
+          value: nessie
+        - name: QUARKUS_DATASOURCE_PASSWORD
+          value: nessie
+        - name: QUARKUS_DATASOURCE_DB_KIND
+          value: postgresql
+---
+# Nessie Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: nessie
+spec:
+  ports:
+  - port: 19120
+    targetPort: 19120
+  selector:
+    app: nessie

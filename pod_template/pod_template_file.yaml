@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "airflow.podName" . }}"
+  labels:
+    tier: airflow
+    component: worker
+    release: "{{ .Release.Name }}"
+spec:
+  priorityClassName: high-priority
+  containers:
+    - name: airflow-worker
+      image: "rboubaya/airflow:1.1"
+      volumeMounts:
+        - name: airflow-dags
+          mountPath: /opt/airflow/dags
+          readOnly: false
+
+        - name: airflow-files
+          mountPath: /opt/airflow/files
+          readOnly: false
+  volumes:
+    - name: airflow-dags-file
+      persistentVolumeClaim:
+        claimName: azurefile

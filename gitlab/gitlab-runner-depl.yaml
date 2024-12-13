@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab-runner
+  namespace: gitlab-runner-n
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab-runner
+  template:
+    metadata:
+      labels:
+        app: gitlab-runner
+    spec:
+      hostAliases:
+      - ip: "10.0.3.5"
+        hostnames:
+        - "gitlab.cnam.local"
+      containers:
+      - name: gitlab-runner
+        image: registry.gitlab.com/gitlab-org/gitlab-runner:alpine-v17.1.0
+        env:
+        - name: CI_SERVER_URL
+          value: "http://gitlab.cnam.local/"
+        - name: RUNNER_EXECUTOR
+          value: "kubernetes"
+        - name: REGISTER_LOCKED
+          value: "true"
+        - name: RUNNER_TAG_LIST
+          value: "kubernetes,ci"
+        - name: RUNNER_NAME
+          value: "kubernetes-runner"
+        - name: REGISTRATION_TOKEN
+          value: "GR1348941EWZiYRtsKJwX4eT3Mdd7"
+        volumeMounts:
+        - mountPath: /home/gitlab-runner/.gitlab-runner
+          name: config
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - /configmaps/check-live
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /usr/bin/pgrep
+            - gitlab.*runner
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: config
+        emptyDir: {}
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000

@@ -1,0 +1,53 @@
+version: '3.7'
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  init:
+    image: rboubaya/my-airflow:1.1
+    command: ["bash", "-c", "airflow db init && touch /initialized"]
+    environment:
+      - SLUGIFY_USES_TEXT_UNIDECODE=yes
+    volumes:
+      - ./dags:/usr/local/airflow/dags
+      - init_data:/initialized
+    depends_on:
+      - postgres
+
+  webserver:
+    image: rboubaya/my-airflow:1.1
+    command: ["bash", "-c", "while [ ! -f /initialized ]; do sleep 1; done; airflow webserver"]
+    environment:
+      - SLUGIFY_USES_TEXT_UNIDECODE=yes
+    ports:
+      - "8080:8080"
+    depends_on:
+      - init
+    volumes:
+      - ./dags:/usr/local/airflow/dags
+      - init_data:/initialized
+
+  scheduler:
+    image: rboubaya/my-airflow:1.1
+    command: ["bash", "-c", "while [ ! -f /initialized ]; do sleep 1; done; airflow scheduler"]
+    environment:
+      - SLUGIFY_USES_TEXT_UNIDECODE=yes
+    depends_on:
+      - init
+    volumes:
+      - ./dags:/usr/local/airflow/dags
+      - init_data:/initialized
+
+volumes:
+  postgres_data:
+  init_data:
+

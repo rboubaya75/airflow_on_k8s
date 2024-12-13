@@ -1,0 +1,16 @@
+gitlabUrl: http://gitlab.cnam.local/
+runnerRegistrationToken: "GR134894148wJ5ug9cTo5YSASx_iD"
+rbac:
+  create: true
+runners:
+  privileged: true
+  config: |
+    [[runners]]
+      name = "kubernetes-runner"
+      url = "http://gitlab.example.local/"
+      token = "GR134894148wJ5ug9cTo5YSASx_iD"
+      executor = "kubernetes"
+      [runners.kubernetes]
+        namespace = "gitlab-runner"
+        image = "ubuntu:22.04"
+        

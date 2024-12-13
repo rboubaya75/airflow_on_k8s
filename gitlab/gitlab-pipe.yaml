@@ -1,0 +1,61 @@
+stages:
+  - build
+  - deploy
+  - cleanup
+
+build_airflow:
+  stage: build
+  script:
+    - cd Airflow
+    - docker build -t airflow:1.0 .
+    - cd ..
+
+  
+deploy_airflow:
+  image: airflow:1.0
+  stage: deploy
+  script:
+    - cd Airflow
+    - kubectl apply -f airflow.yaml
+    - cd ..
+
+deploy_minio:
+  image: bitnami/kubectl:latest
+  stage: deploy
+  script:
+    - cd Minio
+    - echo "Creating Minio secrets"
+    - kubectl create secret generic minio-secrets --namespace my-minio --from-literal=MINIO_ROOT_USER=${MINIO_ROOT_USER} --from-literal=MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD} || true
+    - kubectl apply -f minio.yaml
+    - cd ..
+
+deploy_trino:
+  image: bitnami/kubectl:latest
+  stage: deploy
+  script:
+    - cd Trino
+    - export MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+    - export MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+    - envsubst < trino.yaml | kubectl apply -f -
+    - cd ..
+  only:
+    - test
+
+cleanup_deployments:
+  image: bitnami/kubectl:latest
+  stage: cleanup
+  script:
+    - cd Airflow
+    - kubectl delete -f airflow.yaml
+    - cd ..
+    - cd Minio
+    - kubectl delete -f minio.yaml
+    - kubectl delete secret minio-secrets -n my-minio
+    - cd ..
+    - cd Trino
+    - kubectl delete -f trino.yaml
+    - cd ..
+  when: manual
+  only:
+    - test
+

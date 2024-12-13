@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch
+  namespace: efk
+  labels:
+    app: elasticsearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: workers-vm-1
+      tolerations:
+      - key: "worker"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      containers:
+      - name: elasticsearch
+        image:  docker.elastic.co/elasticsearch/elasticsearch:8.14.1
+        env:
+        - name: discovery.type
+          value: single-node
+        ports:
+        - containerPort: 9200
+          name: http
+        - containerPort: 9300
+          name: transport
+        volumeMounts:
+            - name: elasticsearch-config
+              mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+              subPath: elasticsearch.yml
+      volumes:
+        - name: elasticsearch-config
+          configMap:
+            name: elasticsearch-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: efk
+  labels:
+    app: elasticsearch
+spec:
+  ports:
+  - port: 9200
+    protocol: TCP
+    targetPort: 9200
+  selector:
+    app: elasticsearch
+    
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-config
+  namespace: efk
+data:
+  elasticsearch.yml: |
+    cluster.name: "docker-cluster"
+    network.host: 0.0.0.0
+    xpack.security.http.ssl.enabled: false
+    discovery.type: single-node
+    xpack.security.enabled: true

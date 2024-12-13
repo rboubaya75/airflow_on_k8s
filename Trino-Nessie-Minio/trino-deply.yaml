@@ -1,0 +1,206 @@
+# Label your worker node (workers-vm-1) with a specific label that you will use for node selection:
+
+#kubectl label node workers-vm-1 role=worker
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: trino-ns
+  
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-catalog
+  namespace: trino-ns
+  labels:
+    app: trino
+    role: catalogs
+data:
+  nessie.properties: |
+    connector.name=iceberg
+    iceberg.catalog.type=nessie
+    iceberg.nessie-catalog.uri=http://nessie.nessie.svc.cluster.local:19120/api/v1
+    iceberg.nessie-catalog.default-warehouse-dir=s3a://landing
+    iceberg.file-format=PARQUET
+    iceberg.nessie-catalog.ref=main
+    hive.s3.aws-access-key=${MINIO_ACCESS_KEY}
+    hive.s3.aws-secret-key=${MINIO_SECRET_KEY}
+    hive.s3.endpoint=http://minio.minio.svc.cluster.local:9010
+    hive.s3.path-style-access=true
+    hive.s3.ssl.enabled=false
+  hive.properties: |
+    connector.name=hive
+    hive.metastore.uri=thrift://hivems-hive-metastore.hive-metastore:9083
+    hive.s3.path-style-access=true
+    hive.s3.endpoint=http://minio.minio.svc.cluster.local:9010
+    hive.s3.aws-access-key=${MINIO_ACCESS_KEY}
+    hive.s3.aws-secret-key=${MINIO_SECRET_KEY}
+    hive.non-managed-table-writes-enabled=true
+    hive.storage-format=PARQUET
+    hive.s3.ssl.enabled=false
+  iceberg.properties: |
+    connector.name=iceberg
+    hive.metastore.uri=thrift://hivems-hive-metastore.hive-metastore:9083
+    hive.s3.path-style-access=true
+    hive.s3.endpoint=http://minio.minio.svc.cluster.local:9010
+    hive.s3.aws-access-key=${MINIO_ACCESS_KEY}
+    hive.s3.aws-secret-key=${MINIO_SECRET_KEY}
+  tpcds.properties: |
+    connector.name=tpcds
+    tpcds.splits-per-node=4
+  tpch.properties: |
+    connector.name=tpch
+    tpch.splits-per-node=4
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trino-properties
+  namespace: trino-ns
+  labels:
+    app: trino
+data:
+  config.properties: |
+    coordinator=true
+    node-scheduler.include-coordinator=true
+    http-server.http.port=8081
+    query.max-memory=5GB
+    query.max-memory-per-node=1GB
+    discovery.uri=http://trino-coordinator:8081
+    node.environment=production
+  jvm.config: |
+    -server
+    -Xmx16G
+    -XX:+UseG1GC
+    -XX:G1HeapRegionSize=32M
+    -XX:+ExplicitGCInvokesConcurrent
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:+ExitOnOutOfMemoryError
+  log.properties: |
+    com.facebook.presto=INFO
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trino-coordinator
+  namespace: trino-ns
+  labels:
+    app: trino
+    component: coordinator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trino
+      component: coordinator
+  template:
+    metadata:
+      labels:
+        app: trino
+        component: coordinator
+    spec:
+      nodeSelector:
+        role: worker
+      tolerations:
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+      containers:
+      - name: trino-coordinator
+        image: trinodb/trino:448
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: catalog-volume
+          mountPath: /etc/trino/catalog
+        - name: trino-properties
+          mountPath: /etc/trino
+      volumes:
+      - name: catalog-volume
+        configMap:
+          name: trino-catalog
+      - name: trino-properties
+        configMap:
+          name: trino-properties
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trino-worker
+  namespace: trino-ns
+  labels:
+    app: trino
+    component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trino
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: trino
+        component: worker
+    spec:
+      nodeSelector:
+        role: worker
+      tolerations:
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+      containers:
+      - name: trino-worker
+        image: trinodb/trino:448
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: catalog-volume
+          mountPath: /etc/trino/catalog
+        - name: trino-properties
+          mountPath: /etc/trino
+      volumes:
+      - name: catalog-volume
+        configMap:
+          name: trino-catalog
+      - name: trino-properties
+        configMap:
+          name: trino-properties
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trino
+  namespace: trino-ns
+  labels:
+    app: trino
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 8082
+    targetPort: http
+    nodePort: 30270
+  selector:
+    app: trino
+    component: coordinator
